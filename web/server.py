@@ -1,4 +1,4 @@
-"""music-geshizhuanhuan 网页版服务端（仅监听本机 127.0.0.1）。
+"""music-zhuanhuan 网页版服务端（仅监听本机 127.0.0.1）。
 
 API:
   GET  /api/health                健康检查
@@ -236,14 +236,14 @@ def clear():
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="music-geshizhuanhuan 网页版")
+    parser = argparse.ArgumentParser(description="music-zhuanhuan 网页版")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8686)
     parser.add_argument("--no-browser", action="store_true",
                         help="启动后不自动打开浏览器")
     args = parser.parse_args()
     url = f"http://{args.host}:{args.port}"
-    print(f"music-geshizhuanhuan 网页版已启动: {url}")
+    print(f"music-zhuanhuan 网页版已启动: {url}")
     print("仅监听本机；文件在你的电脑上本地解密，不会上传到任何服务器。")
     if not args.no_browser:
         import webbrowser

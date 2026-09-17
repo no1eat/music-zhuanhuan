@@ -83,7 +83,7 @@ def get(url: str) -> bytes:
 
 def test_health_and_index(server):
     assert json.loads(get(f"{BASE}/api/health"))["ok"] is True
-    assert b"music-geshizhuanhuan" in get(f"{BASE}/")
+    assert "music-格式转换".encode() in get(f"{BASE}/")   # 页面标题/横幅的当前品牌名
 
 
 def test_all_formats_roundtrip(server):

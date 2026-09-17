@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>music-geshizhuanhuan · 全平台加密音乐格式转换</title>
+<title>music-格式转换</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c5cff'/%3E%3Cstop%20offset='1'%20stop-color='%232dd4ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='24'%20height='24'%20rx='7'%20fill='url(%23g)'/%3E%3Cpath%20d='M9%2018V6l10-2v11'%20fill='none'%20stroke='%23fff'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='6.5'%20cy='18'%20r='2.5'%20fill='%23fff'/%3E%3Ccircle%20cx='16.5'%20cy='15'%20r='2.5'%20fill='%23fff'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #07090f;
@@ -201,6 +202,19 @@
     color: var(--dim); font-size: 12px; line-height: 2; }
   .foot-note code { background: rgba(255,255,255,.06); border: 1px solid var(--line);
     padding: 1px 7px; border-radius: 6px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11px; }
+  /* ---- 提示条 / 横幅 ---- */
+  .notice { margin: 0 0 14px; padding: 11px 16px; border-radius: 12px; font-size: 12.5px;
+    line-height: 1.7; border: 1px solid rgba(251,191,36,.35);
+    background: rgba(251,191,36,.09); color: #fbbf24; }
+  .notice.err { border-color: rgba(251,90,90,.4); background: rgba(251,90,90,.1); color: #ff9090; }
+  .notice[hidden] { display: none; }
+  .banner { margin: 18px 0 0; padding: 14px 18px; border-radius: 14px; font-size: 13px;
+    line-height: 1.85; color: #ffd7a1; border: 1px solid rgba(251,191,36,.4);
+    background: linear-gradient(160deg, rgba(251,191,36,.14), rgba(251,90,90,.07)); }
+  .banner[hidden] { display: none; }
+  .banner b { color: #ffcf7a; }
+  .banner code { background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.12);
+    padding: 1px 7px; border-radius: 6px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; }
 </style>
 </head>
 <body>
@@ -213,11 +227,17 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 18V6l10-2v11" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="#fff"/><circle cx="16.5" cy="15" r="2.5" fill="#fff"/></svg>
     </div>
     <div class="brand">
-      <h1>music-geshizhuanhuan</h1>
+      <h1>music-格式转换</h1>
       <p>全平台加密音乐格式转换 · 本地解密 · 不上传</p>
     </div>
     <span id="health">连接中</span>
   </header>
+
+  <div class="banner" id="banner" hidden>
+    <b>当前是直接打开网页文件（file://），无法连接本地解密服务，拖进来的文件也不会开始转换。</b><br>
+    请先启动服务：Windows 双击 <code>run.bat</code>（或运行 <code>run.bat web</code>），macOS / Linux 运行 <code>./run.sh web</code>，
+    然后打开 <code>http://127.0.0.1:8686</code> 再拖入文件。
+  </div>
 
   <div class="drop" id="drop">
     <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -254,6 +274,7 @@
     </span>
   </div>
 
+  <div class="notice" id="notice" hidden></div>
   <div id="list"></div>
   <div class="empty" id="empty">
     <svg width="64" height="48" viewBox="0 0 64 48" fill="none" stroke="#8a93a6" stroke-width="1.6" stroke-linecap="round">
@@ -306,9 +327,11 @@ function platOf(name) {
 }
 
 async function health() {
+  if (location.protocol === 'file:') { $('health').textContent = '未启动服务'; return; }
   try {
     const r = await fetch('/api/health');
     if (r.ok) { $('health').textContent = '服务正常'; $('health').classList.add('on'); }
+    else $('health').textContent = '服务异常';
   } catch { $('health').textContent = '连接失败'; }
 }
 
@@ -318,26 +341,51 @@ function fmtSize(n) {
   return n + ' B';
 }
 
+let noticeTimer = null;
+function notify(msg, kind) {
+  const el = $('notice');
+  el.textContent = msg;
+  el.className = 'notice' + (kind === 'err' ? ' err' : '');
+  el.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => { el.hidden = true; }, 15000);
+}
+
 function addFiles(fileList) {
+  const skipped = [];
   for (const f of fileList) {
-    if (!EXTS.has(f.name.split('.').pop().toLowerCase())) continue;
+    if (!EXTS.has(f.name.split('.').pop().toLowerCase())) { skipped.push(f.name); continue; }
     state.items.push({ file: f, status: 'wait', id: null, note: '', tags: {}, cover: null, plat: platOf(f.name) });
-    render();
   }
+  // 不支持的格式以前是静默 continue，用户完全看不出发生了什么，这里必须说清楚
+  if (skipped.length) {
+    const names = skipped.slice(0, 3).join('、') + (skipped.length > 3 ? ' 等' : '');
+    notify(`已跳过 ${skipped.length} 个不支持的文件：${names}。本工具只认各平台的加密格式（.ncm/.mflac/.mgg/.qmc*/.tkm/.kgm/.kgma/.vpr/.kwm）。`);
+  }
+  render();
   pump();
 }
 
-async function collectEntry(entry, out) {
+// entry.file() / reader.readEntries() 都有成功、失败两个回调。
+// 只传成功回调时，一旦失败（典型场景：file:// 直接打开的页面拿不到文件系统权限），
+// Promise 就永远不 resolve，整个拖放流程静默卡死——表现就是"拖进去毫无反应"。
+async function collectEntry(entry, out, failed) {
   if (entry.isFile) {
-    const f = await new Promise(res => entry.file(res));
-    out.push(f);
-  } else if (entry.isDirectory) {
-    const reader = entry.createReader();
-    while (true) {
-      const batch = await new Promise(res => reader.readEntries(res));
-      if (!batch.length) break;
-      for (const e of batch) await collectEntry(e, out);
-    }
+    const f = await new Promise(res => {
+      try { entry.file(res, () => res(null)); } catch { res(null); }
+    });
+    if (f) out.push(f); else failed.push({ name: entry.name || '未知文件', isDir: false });
+    return;
+  }
+  if (!entry.isDirectory) return;
+  const reader = entry.createReader();
+  while (true) {
+    const batch = await new Promise(res => {
+      try { reader.readEntries(res, () => res(null)); } catch { res(null); }
+    });
+    if (!batch) { failed.push({ name: (entry.name || '未知目录') + '/', isDir: true }); return; }
+    if (!batch.length) return;
+    for (const e of batch) await collectEntry(e, out, failed);
   }
 }
 
@@ -485,18 +533,43 @@ $('picker').onchange = e => { addFiles([...e.target.files]); e.target.value = ''
 
 drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
 drop.ondragleave = () => drop.classList.remove('over');
-drop.ondrop = async e => {
+
+// 整页接受拖放（拖到拖放区以外也能用），并阻止浏览器直接打开被拖入的文件（否则页面会跳走）
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', async e => {
   e.preventDefault();
   drop.classList.remove('over');
-  const files = [];
-  const entries = [...(e.dataTransfer.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
-  if (entries.length) {
-    for (const entry of entries) await collectEntry(entry, files);
-  } else {
-    files.push(...e.dataTransfer.files);
+  const dt = e.dataTransfer;
+  if (!dt) return;
+  // DataTransfer 只在事件同步阶段有效，await 之后 items/files 会被清空，所以先快照下来
+  const dropped = [...(dt.files || [])];
+  const entries = [...(dt.items || [])].map(i => {
+    try { return i.webkitGetAsEntry ? i.webkitGetAsEntry() : null; } catch { return null; }
+  }).filter(Boolean);
+  if (!entries.length) { addFiles(dropped); return; }
+
+  const files = [], failed = [];
+  // 兜底超时：万一底层一个回调都不触发，也不能让界面永远"没反应"
+  const done = await Promise.race([
+    (async () => { for (const entry of entries) await collectEntry(entry, files, failed); return true; })(),
+    new Promise(res => setTimeout(() => res(false), 20000)),
+  ]);
+  if (!done) {
+    notify('读取拖入的文件超时，已放弃。如果你是从文件夹里直接双击打开 index.html（file://）的，请改用启动器运行网页版后再拖入。', 'err');
+    return;
+  }
+  // entry API 拿不到文件（典型场景：file:// 直接打开的页面）时，退回 dataTransfer.files，
+  // 这样文件仍能进队列，转换失败也会有明确报错，而不是一片死寂
+  if (!files.length && dropped.length && !failed.some(f => f.isDir)) {
+    addFiles(dropped);
+    return;
+  }
+  if (failed.length) {
+    const names = failed.slice(0, 3).map(f => f.name).join('、') + (failed.length > 3 ? ' 等' : '');
+    notify(`有 ${failed.length} 项读取失败，已跳过：${names}`, 'err');
   }
   addFiles(files);
-};
+});
 
 $('format').onchange = e => state.format = e.target.value;
 $('embedCover').onchange = e => state.embedCover = e.target.checked;
@@ -511,6 +584,9 @@ $('clear').onclick = async () => {
   state.items = [];
   render();
 };
+
+// 双击 index.html 打开时是 file://，页面连不上后端，拖放也拿不到文件，先用横幅讲清楚
+if (location.protocol === 'file:') $('banner').hidden = false;
 
 health();
 </script>

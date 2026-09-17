@@ -1,15 +1,17 @@
-# music-geshizhuanhuan 🎵
+# music-zhuanhuan 🎵
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776ab)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
 ![Tests](https://img.shields.io/badge/tests-18%2F18%20passed-brightgreen)
 ![Cross-check](https://img.shields.io/badge/cross--check-6%2F6%20passed-brightgreen)
-![Release](https://img.shields.io/github/v/release/HRuiCcc/music-geshizhuanhuan)
 
-> 一个把「加密音乐」变回「普通音乐文件」的跨平台工具。
-> 网易云、QQ 音乐、酷狗、酷我，四个平台的加密格式，拖进去，出来就是标准 mp3/flac。
-> **网页版 + 命令行版，代码从零自研，MIT 协议。**
+> **Forked from [HRuiCcc/music-geshizhuanhuan](https://github.com/HRuiCcc/music-geshizhuanhuan)**
+>
+> 本仓库是上游项目的分支。加密格式的解密引擎、网页版界面和命令行工具都由原作者
+> [HRuiCcc](https://github.com/HRuiCcc) 从零实现，沿用原项目的 MIT 协议，版权归原作者所有。
+> 本分支只动了周边：Windows 的一键启动脚本、网页版的拖放与错误提示、行尾与文档上的小修。
+> 遇到解密本身的问题，请优先到[上游仓库](https://github.com/HRuiCcc/music-geshizhuanhuan)反馈。
 
 ## 📹 演示视频
 
@@ -65,32 +67,39 @@
 
 ## 🚀 快速开始
 
-### macOS / Linux
+### 1. 下载代码
 
 ```bash
-git clone git@github.com:HRuiCcc/music-geshizhuanhuan.git
-cd music-geshizhuanhuan
-./run.sh web        # 首次运行自动装依赖，然后自动打开 http://127.0.0.1:8686
+git clone https://github.com/no1eat/music-zhuanhuan.git
+cd music-zhuanhuan
 ```
 
-### Windows
+> 没装 Git 也行：在仓库页面点 **Code → Download ZIP**，解压出来一样能跑。
 
-```powershell
-git clone git@github.com:HRuiCcc/music-geshizhuanhuan.git
-cd music-geshizhuanhuan
-.\run.bat web       # 双击 run.bat 或 PowerShell 运行，自动装依赖并打开浏览器
-```
+### 2. 启动网页版（推荐）
 
-### 网页版（推荐）
+**Windows**：双击 `run.bat`
 
-```bash
-./run.sh web                          # macOS/Linux；Windows: run.bat web
-# 启动后自动打开 http://127.0.0.1:8686，拖文件进去即可
-# 可选: ./run.sh web --port 9000
-# 可选: ./run.sh web --no-browser     # 不自动打开浏览器
-```
+**macOS / Linux**：终端里运行 `./run.sh`
 
-### 命令行版
+首次运行会自动创建虚拟环境 `.venv` 并装好依赖（需要联网，几十秒到一两分钟），
+完成后浏览器会自动打开 `http://127.0.0.1:8686`。把文件、或者整个文件夹拖进页面就开始转换。
+
+- 转换期间**不要关掉那个命令行窗口**，关掉窗口就等于停止服务；
+- Windows 需要先装 [Python 3.10+](https://www.python.org/downloads/)，安装时记得勾选 **Add Python to PATH**；macOS / Linux 一般自带；
+- 启动参数直接接在后面：
+
+| 用途 | Windows | macOS / Linux |
+|---|---|---|
+| 网页版（默认） | 双击 `run.bat` 或 `run.bat web` | `./run.sh` 或 `./run.sh web` |
+| 换端口 | `run.bat web --port 9000` | `./run.sh web --port 9000` |
+| 不自动开浏览器 | `run.bat web --no-browser` | `./run.sh web --no-browser` |
+
+> ⚠️ **不要直接双击 `web/static/index.html`。** 那样打开的是 `file://` 页面，浏览器会禁止它访问本地解密服务，
+> 拖进去的文件不会有任何反应。请始终用上面的启动器打开 `http://127.0.0.1:8686`；
+> 如果你已经这么打开了，页面顶部会给出提示。
+
+### 3. 命令行版
 
 ```bash
 ./run.sh 歌曲.ncm                              # 解密单个文件 → ./unlocked
@@ -150,7 +159,7 @@ flowchart LR
 ## 🗂 项目结构
 
 ```
-music-geshizhuanhuan/
+music-zhuanhuan/
 ├── unlocker.py        # CLI 入口
 ├── run.sh / run.bat   # 启动器（macOS/Linux: run.sh，Windows: run.bat；web / 命令行 双模式）
 ├── music_unlock/      # 核心引擎（纯 Python，仅标准库+pycryptodome）
@@ -193,7 +202,7 @@ A：只解密、保持原格式时不需要；需要统一转码（如 `--format
 A：解密是逐字节还原，flac 等无损格式解密后无损；转码为 flac 也无损（ffmpeg flac 编码）。
 
 **Q：Windows 能用吗？**
-A：能，引擎、网页版、命令行版全平台一致。Windows 直接双击 `run.bat` 或 PowerShell 运行 `.\run.bat web`，首次运行自动装依赖、自动打开浏览器；参数与 `run.sh` 完全相同。
+A：能，引擎、网页版、命令行版全平台一致。Windows 直接双击 `run.bat`（等价于 `run.bat web`），首次运行自动装依赖、自动打开浏览器；命令行参数与 `run.sh` 完全相同。注意不要直接双击 `web/static/index.html`，那样绕过了本地服务，页面无法工作。
 
 ## 🧱 已知限制
 
