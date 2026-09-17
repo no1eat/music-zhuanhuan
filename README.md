@@ -223,10 +223,3 @@ A：能，引擎、网页版、命令行版全平台一致。Windows 直接双�
 ## ⭐ 支持项目
 
 如果这个工具帮到了你，给个 Star 鼓励一下，有问题欢迎提 Issue！
-
-也可以请我喝杯奶茶 ☕（微信扫码赞赏）：
-
-<div align="center">
-  <img src="assets/wechat-donate.png" width="300" alt="微信赞赏码" />
-  <p><sub>微信赞赏码</sub></p>
-</div>
